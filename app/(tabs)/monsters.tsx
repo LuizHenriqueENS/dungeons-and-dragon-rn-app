@@ -1,43 +1,161 @@
-import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Button, Image, SafeAreaView, Text } from 'react-native'
-import { getBeast, getAllMonstersName as monstersName } from '../../src/api/dungeons'
+import MonsterStatusText from "@/components/MonsterStatusText";
+import { getAllMonstersName, getMonsterInfo } from "@/src/api/dungeons.js";
+import { Monster, MonsterInfo } from "@/types/MonsterInfo";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Image,
+  ImageBackground,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SelectList } from "react-native-dropdown-select-list";
 
 export default function Monsters() {
-  const [beastImg, setBeastImg] = useState<String>()
-  const [beastName, setBeastName] = useState<String>()
-  const [beastImgUrl, setBeastImgUrl] = useState<String>()
-  const [loading, setLoading] = useState<Boolean>(false)
+  const [selected, setSelected] = useState<string>("");
+  const [monsters, setMonsters] = useState<Monster[]>([]);
+  const [monsterInfo, setMonsterInfo] = useState<MonsterInfo>();
+  const [visivel, setVisivel] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fecthData = async () => {
+        const monsterAPI = await getAllMonstersName();
+        setMonsters(monsterAPI);
+      };
+
+      fecthData();
+    }, [])
+  );
 
   useEffect(() => {
-    setLoading(true)
-    const fecthData = async () => {
-      const imgUrl = await getBeast(beastImgUrl)
-      setBeastImg(imgUrl)
-      setTimeout(() => {
-        setLoading(false)
-      }, 1000);
-    }
+    const preftchData = async () => {
+      setMonsterInfo(await getMonsterInfo(returnURL(selected)));
+    };
 
-    fecthData()
-  }, [beastName])
-
-
+    preftchData();
+  }, [selected]);
   return (
-    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Button title='+' onPress={async () => {
-        const randomN = Math.ceil(Math.random() * 200)
-        setBeastImgUrl((await monstersName(randomN)).url)
-        setBeastName((await monstersName(randomN)).name)
-      }} />
-      {loading ?
-        <ActivityIndicator size='large' color='#00ff00' /> :
-        <Image source={{
-          uri: loading ? "https://i.imgur.com/aeStzjo.jpeg" : beastImg?.toString(),
-          height: 300,
-          width: 250,
-        }} />
-      }
-      <Text>{loading ? `` : beastName}</Text>
+    <SafeAreaView
+      style={{ flex: 1, justifyContent: "flex-start", paddingTop: 50 }}
+    >
+      <Modal visible={visivel} transparent={false}>
+        <Pressable onPress={() => setVisivel(false)}>
+          <ImageBackground style={styles.image} source={{uri: monsterInfo?.image}}/>
+        </Pressable>
+      </Modal>
+      <View
+        style={{
+          flexDirection: "row",
+          margin: 12,
+          borderBottomColor: "black",
+          borderBottomWidth: 0.25,
+          paddingBottom: 10,
+        }}
+      >
+        <Pressable
+          onPress={() => {
+            setVisivel(true);
+          }}
+        >
+          <Image
+            style={{ width: 150, height: 150 }}
+            source={{
+              uri: monsterInfo?.image,
+            }}
+            resizeMode="stretch"
+          />
+        </Pressable>
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 26,
+              fontWeight: 900,
+              flexShrink: 1,
+              textAlign: "center",
+              textAlignVertical: "center",
+              paddingTop: 5,
+            }}
+          >
+            {monsterInfo?.name}
+          </Text>
+          // #region Colunas dos Status
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-around",
+              marginStart: 12,
+              gap: 10,
+            }}
+          >
+            <View
+              style={{
+                paddingEnd: 10,
+                borderEndWidth: 0.2,
+                borderEndColor: "black",
+              }}
+            >
+              <MonsterStatusText
+                statusName="Força"
+                statusValue={monsterInfo?.strength}
+              />
+              <MonsterStatusText
+                statusName="Destreza"
+                statusValue={monsterInfo?.dexterity}
+              />
+              <MonsterStatusText
+                statusName="Constituição"
+                statusValue={monsterInfo?.constitution}
+              />
+            </View>
+            <View>
+              <MonsterStatusText
+                statusName="Inteligência"
+                statusValue={monsterInfo?.intelligence}
+              />
+              <MonsterStatusText
+                statusName="Sabedoria"
+                statusValue={monsterInfo?.wisdom}
+              />
+              <MonsterStatusText
+                statusName="Carisma"
+                statusValue={monsterInfo?.charisma}
+              />
+            </View>
+            // #endregion
+          </View>
+        </View>
+      </View>
+
+      <SelectList
+        data={monsters.map((monster) => monster.name)}
+        save="value"
+        search={false}
+        setSelected={(v: string) => setSelected(v)}
+      />
     </SafeAreaView>
-  )
+  );
+
+
+  function returnURL(name: string) {
+    const findMonster = monsters.find((x) => x.name === name);
+    return findMonster?.url;
+  }
 }
+
+const styles = StyleSheet.create({
+  image:{
+    width: '100%',
+    height: '100%',
+  }
+})

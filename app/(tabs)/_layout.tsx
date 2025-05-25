@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native'
 
 export default function TabLayout() {
     return (
-        <Tabs initialRouteName='index'
+        <Tabs initialRouteName='monsters'
             screenOptions={{ tabBarActiveTintColor: '#ffd33d', headerShown: false }}>
             <Tabs.Screen name='monsters' options={{
                 title: 'Monsters', tabBarIcon: ({ color, focused }) => (
