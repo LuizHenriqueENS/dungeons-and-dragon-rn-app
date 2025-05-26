@@ -4,6 +4,8 @@ import { Monster, MonsterInfo } from "@/types/MonsterInfo";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  FlatList,
   Image,
   ImageBackground,
   Modal,
@@ -11,21 +13,23 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  View,
+  TouchableOpacity,
+  View
 } from "react-native";
-import { SelectList } from "react-native-dropdown-select-list";
 
 export default function Monsters() {
   const [selected, setSelected] = useState<string>("");
   const [monsters, setMonsters] = useState<Monster[]>([]);
   const [monsterInfo, setMonsterInfo] = useState<MonsterInfo>();
   const [visivel, setVisivel] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   useFocusEffect(
     useCallback(() => {
       const fecthData = async () => {
         const monsterAPI = await getAllMonstersName();
         setMonsters(monsterAPI);
+        setSelected(monsters[3].name)
       };
 
       fecthData();
@@ -34,10 +38,15 @@ export default function Monsters() {
 
   useEffect(() => {
     const preftchData = async () => {
+
       setMonsterInfo(await getMonsterInfo(returnURL(selected)));
     };
 
     preftchData();
+    setTimeout(() => {
+      setIsLoading(false)
+
+    }, 1500);
   }, [selected]);
   return (
     <SafeAreaView
@@ -45,7 +54,7 @@ export default function Monsters() {
     >
       <Modal visible={visivel} transparent={false}>
         <Pressable onPress={() => setVisivel(false)}>
-          <ImageBackground style={styles.image} source={{uri: monsterInfo?.image}}/>
+          <ImageBackground style={styles.image} source={{ uri: monsterInfo?.image }} />
         </Pressable>
       </Modal>
       <View
@@ -53,7 +62,7 @@ export default function Monsters() {
           flexDirection: "row",
           margin: 12,
           borderBottomColor: "black",
-          borderBottomWidth: 0.25,
+          borderBottomWidth: 0.5,
           paddingBottom: 10,
         }}
       >
@@ -89,19 +98,18 @@ export default function Monsters() {
           >
             {monsterInfo?.name}
           </Text>
-          // #region Colunas dos Status
+          {/* // #region Colunas dos Status */}
           <View
             style={{
               flexDirection: "row",
-              justifyContent: "space-around",
               marginStart: 12,
-              gap: 10,
+              gap: 1,
             }}
           >
             <View
               style={{
-                paddingEnd: 10,
-                borderEndWidth: 0.2,
+                paddingEnd: 4,
+                borderEndWidth: 0.5,
                 borderEndColor: "black",
               }}
             >
@@ -118,7 +126,7 @@ export default function Monsters() {
                 statusValue={monsterInfo?.constitution}
               />
             </View>
-            <View>
+            <View style={{ paddingStart: 3, paddingEnd: 3 }}>
               <MonsterStatusText
                 statusName="Inteligência"
                 statusValue={monsterInfo?.intelligence}
@@ -132,17 +140,33 @@ export default function Monsters() {
                 statusValue={monsterInfo?.charisma}
               />
             </View>
-            // #endregion
+            {/* // #endregion */}
           </View>
         </View>
       </View>
-
+      {isLoading ?
+        <Modal style={{ flex: 1, justifyContent: 'center', alignContent: 'center' }}
+          animationType="fade"
+          visible={isLoading} >
+          <ActivityIndicator size={'large'} />
+        </Modal> :
+        <FlatList data={monsters.map((m) => m.name)}
+          renderItem={(item) => (
+            <TouchableOpacity onPress={() => {
+              setIsLoading(true)
+              setSelected(item.item)
+            }}>
+              <Text>{item.item}</Text>
+            </TouchableOpacity>
+          )} />
+      }
+      {/* 
       <SelectList
         data={monsters.map((monster) => monster.name)}
         save="value"
         search={false}
         setSelected={(v: string) => setSelected(v)}
-      />
+      /> */}
     </SafeAreaView>
   );
 
@@ -154,7 +178,7 @@ export default function Monsters() {
 }
 
 const styles = StyleSheet.create({
-  image:{
+  image: {
     width: '100%',
     height: '100%',
   }
